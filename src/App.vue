@@ -18,25 +18,28 @@ import charBirdImg4 from './assets/img/drags/fly-bird4.png';
 export default {
   data() {
     return {
-      app: null,
-      bird: null,
-      bgTexture: null,
-      tilingSprite: null,
-      alienImages: [charBirdImg1, charBirdImg2, charBirdImg3, charBirdImg4],
+      app: null, // приложение 
+      bird: null, // птица 
+      x: 30, //
+      y: 220, //
+      bgTexture: null, // бг
+      tilingSprite: null, //
+      alienImages: [charBirdImg1, charBirdImg2, charBirdImg3, charBirdImg4], // анимированная анимация из 4х кадров
       textureArray: [],
       animatedSpray: null,
     };
   },
 
-  created() {},
+  created() { },
   mounted() {
     this.drawPixi();
+    this.listener()
+
   },
   methods: {
     drawPixi() {
-      let wrapper = document.querySelector('.wrapper');
-      let container = new Container();
-      this.app = new PIXI.Application({
+      let wrapper = document.querySelector('.wrapper'); // елемент со страницы где будем рендерить игру
+      this.app = new PIXI.Application({ //?  новый екзенпляр пикси жс,  
         transparent: true,
         width: 225,
         height: 400,
@@ -44,7 +47,7 @@ export default {
         buttonMode: true,
       });
 
-      wrapper.appendChild(this.app.view);
+      wrapper.appendChild(this.app.view); // добавляем на страницу 
 
       this.renderSourse();
       this.stageAdd();
@@ -54,15 +57,20 @@ export default {
         this.textureArray.push(texture);
       }
 
-      this.animatedSpray = new PIXI.AnimatedSprite(this.textureArray);
-      this.animatedSpray.position.set(30, 220);
-      this.app.stage.addChild(this.animatedSpray);
-      this.animatedSpray.play();
-      this.animatedSpray.animationSpeed = 0.1;
+      this.animatedSpray = new PIXI.AnimatedSprite(this.textureArray);  // создание анимированного спрея на основе 4х картинок
+      this.animatedSpray.position.set(this.x, this.y);
+      this.app.stage.addChild(this.animatedSpray); // добавить аниммСПрей на сцену 
+      this.animatedSpray.animationSpeed = 0.1; // скорость анимации 
+      this.animatedSpray.rotation
+      this.app.stage.interactive = true;
+      this.app.stage.on('click', () => this.moveBird())
+      this.animatedSpray.play(); // запустить анимацию 
+      
 
-      this.app.ticker.add(() => {
+      this.app.ticker.add(() => { //ticker это обьект  пикси жс что запускает вызовы в каждом кадре 
         this.moveBg();
-        this.moveBird();
+        this.animatedSpray.position.set(this.x, this.y);
+        this.gravitiBird()
       });
     },
     renderSourse() {
@@ -72,10 +80,25 @@ export default {
     stageAdd() {
       this.app.stage.addChild(this.tilingSprite);
     },
-    moveBird() {},
-    moveBg() {
-      this.tilingSprite.tilePosition.x -= 1;
+    gravitiBird(){
+      this.y += 2
+      this.animatedSpray.rotation += 0.01
     },
+    moveBird() {
+      this.y -= 40
+      this.animatedSpray.rotation -= 0.2
+      console.log(this.x);
+    },
+    moveBg() {
+      this.tilingSprite.tilePosition.x -= 0.5;
+    },
+    listener() {
+      window.addEventListener('keydown',  (e) => {
+        if (e.key === 'ArrowUp') {
+          this.moveBird()
+        }
+      })
+    }
   },
 };
 </script>
