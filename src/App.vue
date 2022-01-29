@@ -8,7 +8,10 @@
 import { Container } from '@pixi/display';
 import * as PIXI from 'pixi.js';
 import birdUrl from './assets/img/bird.png';
-import bgUrl from './assets/img/bg1.png';
+import bgUrl from './assets/img/bg.png';
+import groundURL from './assets/img/ground.png'
+import pipeURL from './assets/img/pipe.png'
+
 import charBirdImg1 from './assets/img/drags/fly-bird1.png';
 import charBirdImg2 from './assets/img/drags/fly-bird2.png';
 import charBirdImg3 from './assets/img/drags/fly-bird3.png';
@@ -20,10 +23,14 @@ export default {
     return {
       app: null, // приложение 
       bird: null, // птица 
+      pipeTexture: null, //
+      pipeSprite: null, //
       x: 30, //
       y: 220, //
       bgTexture: null, // бг
-      tilingSprite: null, //
+      groundTexture: null, //
+      tilingSpriteBG: null, //
+      tilingSpriteGround: null, //
       alienImages: [charBirdImg1, charBirdImg2, charBirdImg3, charBirdImg4], // анимированная анимация из 4х кадров
       textureArray: [],
       animatedSpray: null,
@@ -63,34 +70,56 @@ export default {
       this.animatedSpray.animationSpeed = 0.1; // скорость анимации 
       this.animatedSpray.rotation
       this.app.stage.interactive = true;
+      // this.app.stage.sortableChildren  = true;
       this.app.stage.on('click', () => this.moveBird())
       this.animatedSpray.play(); // запустить анимацию 
       
 
-      this.app.ticker.add(() => { //ticker это обьект  пикси жс что запускает вызовы в каждом кадре 
+      this.app.ticker.add(() => { //ticker это обьект  пикси жс что запускает вызовы в каждом кадре реквест анимейшитн фрейм
+        this.moveGround()
         this.moveBg();
         this.animatedSpray.position.set(this.x, this.y);
         this.gravitiBird()
+        this.setPositionPipe()
       });
     },
     renderSourse() {
       this.bgTexture = PIXI.Texture.from(bgUrl);
-      this.tilingSprite = new PIXI.TilingSprite(this.bgTexture, 225, 400);
+      this.pipeTexture = PIXI.Texture.from(pipeURL);
+      this.pipeSprite = PIXI.Sprite.from(this.pipeTexture)
+      this.groundTexture = PIXI.Texture.from(groundURL);
+
+      this.tilingSpriteBG = new PIXI.TilingSprite(this.bgTexture, 225, 400);
+      this.tilingSpriteGround = new PIXI.TilingSprite(this.groundTexture, 263, 86);
+      this.tilingSpriteGround.position.set(-10, 350);
     },
     stageAdd() {
-      this.app.stage.addChild(this.tilingSprite);
+      this.app.stage.addChild(this.tilingSpriteBG);
+      this.app.stage.addChild(this.pipeSprite);
+      this.app.stage.addChild(this.tilingSpriteGround);
+    
+    },
+
+    setPositionPipe(){
+      this.pipeSprite.position.set(50, 150);
     },
     gravitiBird(){
       this.y += 2
       this.animatedSpray.rotation += 0.01
     },
     moveBird() {
-      this.y -= 40
+      this.y -= 50
       this.animatedSpray.rotation -= 0.2
       console.log(this.x);
     },
     moveBg() {
-      this.tilingSprite.tilePosition.x -= 0.5;
+      this.tilingSpriteBG.tilePosition.x -= 0.5;
+    },
+    moveGround() {
+      this.tilingSpriteGround.tilePosition.x -= 0.8;
+    },
+    movePipe(){
+
     },
     listener() {
       window.addEventListener('keydown',  (e) => {
