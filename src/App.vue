@@ -22,7 +22,14 @@ export default {
   data() {
     return {
       app: null, // приложение 
-      bird: null, // птица 
+      bird: {
+        alienImages: [charBirdImg1, charBirdImg2, charBirdImg3, charBirdImg4],
+        animatedSpray: null, // анимированная анимация из 4х кадров
+        textureArray: [],
+        x: 30,
+        y: 220,
+        upCounter: 0,
+      }, // птица 
       pipeTexture: null, //
       pipeSprite: null, //
       x: 30, //
@@ -31,9 +38,7 @@ export default {
       groundTexture: null, //
       tilingSpriteBG: null, //
       tilingSpriteGround: null, //
-      alienImages: [charBirdImg1, charBirdImg2, charBirdImg3, charBirdImg4], // анимированная анимация из 4х кадров
       textureArray: [],
-      animatedSpray: null,
     };
   },
 
@@ -59,26 +64,28 @@ export default {
       this.renderSourse();
       this.stageAdd();
 
-      for (let i = 0; i < this.alienImages.length; i++) {
-        let texture = PIXI.Texture.from(this.alienImages[i]);
-        this.textureArray.push(texture);
+      for (let i = 0; i < this.bird.alienImages.length; i++) {
+        let texture = PIXI.Texture.from(this.bird.alienImages[i]);
+        this.bird.textureArray.push(texture);
       }
 
-      this.animatedSpray = new PIXI.AnimatedSprite(this.textureArray);  // создание анимированного спрея на основе 4х картинок
-      this.animatedSpray.position.set(this.x, this.y);
-      this.app.stage.addChild(this.animatedSpray); // добавить аниммСПрей на сцену 
-      this.animatedSpray.animationSpeed = 0.1; // скорость анимации 
-      this.animatedSpray.rotation
+      this.bird.animatedSpray = new PIXI.AnimatedSprite(this.bird.textureArray);  // создание анимированного спрея на основе 4х картинок
+      this.bird.animatedSpray.position.set(this.bird.x, this.bird.y);
+      this.app.stage.addChild(this.bird.animatedSpray); // добавить аниммСПрей на сцену 
+      this.bird.animatedSpray.animationSpeed = 0.1; // скорость анимации 
+      this.bird.animatedSpray.rotation
+
       this.app.stage.interactive = true;
-      // this.app.stage.sortableChildren  = true;
+
+
       this.app.stage.on('click', () => this.moveBird())
-      this.animatedSpray.play(); // запустить анимацию 
-      
+      this.bird.animatedSpray.play(); // запустить анимацию 
+
 
       this.app.ticker.add(() => { //ticker это обьект  пикси жс что запускает вызовы в каждом кадре реквест анимейшитн фрейм
         this.moveGround()
         this.moveBg();
-        this.animatedSpray.position.set(this.x, this.y);
+        this.bird.animatedSpray.position.set(this.bird.x, this.bird.y);
         this.gravitiBird()
         this.setPositionPipe()
       });
@@ -97,20 +104,28 @@ export default {
       this.app.stage.addChild(this.tilingSpriteBG);
       this.app.stage.addChild(this.pipeSprite);
       this.app.stage.addChild(this.tilingSpriteGround);
-    
     },
 
-    setPositionPipe(){
+    setPositionPipe() {
       this.pipeSprite.position.set(50, 150);
     },
-    gravitiBird(){
-      this.y += 2
-      this.animatedSpray.rotation += 0.01
+    gravitiBird() {
+      
+      if (this.bird.animatedSpray.rotation >= 1) {
+          this.bird.animatedSpray.rotation = this.bird.animatedSpray.rotation
+      }  else {
+        this.bird.animatedSpray.rotation += 0.01
+      }
+      this.bird.y += 2
     },
     moveBird() {
-      this.y -= 50
-      this.animatedSpray.rotation -= 0.2
-      console.log(this.x);
+      if (this.bird.animatedSpray.rotation  <= -1 ){
+        this.bird.animatedSpray.rotation = -0.9
+      } else {
+        this.bird.animatedSpray.rotation -= 0.3
+      }
+      this.bird.y -= 50
+      
     },
     moveBg() {
       this.tilingSpriteBG.tilePosition.x -= 0.5;
@@ -118,11 +133,11 @@ export default {
     moveGround() {
       this.tilingSpriteGround.tilePosition.x -= 0.8;
     },
-    movePipe(){
+    movePipe() {
 
     },
     listener() {
-      window.addEventListener('keydown',  (e) => {
+      window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowUp') {
           this.moveBird()
         }
