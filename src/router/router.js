@@ -13,6 +13,7 @@ const routes = [
     path: "/game",
     name: "game",
     component: AppGame,
+    meta: { transition: 'slide-left' },
   },
 ];
 

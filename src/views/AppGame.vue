@@ -79,11 +79,11 @@ export default {
         buttonMode: true, // hz
       });
 
-      wrapper.appendChild(this.app.game.view); // добавляем на страницу 
+      wrapper.appendChild(this.app.game.view); // показывем на страницуе 
 
-      this.renderSourse();
-      this.stageAdd();
-      this.setPositionPipe()
+      this.renderSourse();  // загрузка всех картинок 
+      this.stageAdd(); // добавление на сцену текстур
+      this.setPositionPipe() // установка и размещение труб
 
       for (let i = 0; i < this.bird.alienImages.length; i++) {
         let texture = PIXI.Texture.from(this.bird.alienImages[i]);
@@ -93,7 +93,7 @@ export default {
       this.bird.animatedSpray = new PIXI.AnimatedSprite(this.bird.textureArray);  // создание анимированного спрея на основе 4х картинок
       this.bird.animatedSpray.position.set(this.bird.x, this.bird.y);
       this.app.game.stage.addChild(this.bird.animatedSpray); // добавить аниммСПрей на сцену 
-      this.bird.animatedSpray.animationSpeed = 0.1; // скорость анимации 
+      this.bird.animatedSpray.animationSpeed = 0.2; // скорость анимации 
       this.bird.animatedSpray.rotation
 
       this.app.game.stage.interactive = true;
@@ -119,6 +119,7 @@ export default {
       }
 
     },
+    // загрузка всех картинок 
     renderSourse() {
       this.bgTexture = PIXI.Texture.from(bgUrl);
       this.pipe.pipeTextureBottom = PIXI.Texture.from(pipeBottomURL);
@@ -132,15 +133,18 @@ export default {
       this.ground.tilingSpriteGround.position.set(this.ground.x, this.ground.y);
     },
     stageAdd() {
+      // добавление на сцену 
       this.app.game.stage.addChild(this.tilingSpriteBG);
       this.app.game.stage.addChild(this.pipe.pipeSpriteBottom);
       this.app.game.stage.addChild(this.pipe.pipeSpriteTop);
       this.app.game.stage.addChild(this.ground.tilingSpriteGround);
     },
+    // установка позиций верхней и нижней трубы
     setPositionPipe() {
       this.pipe.pipeSpriteBottom.position.set(this.pipe.x, this.pipe.By);
       this.pipe.pipeSpriteTop.position.set(this.pipe.x, this.pipe.By - this.pipe.height - this.pipe.pipeDdistance);
     },
+    // падение птицы (типо)
     gravitiBird() {
       if (this.bird.animatedSpray.rotation >= 1) {
         this.bird.animatedSpray.rotation = this.bird.animatedSpray.rotation
@@ -149,20 +153,26 @@ export default {
       }
       this.bird.y += 2
     },
+    // движение птицы при клике 
     moveBird() {
-      if (this.bird.animatedSpray.rotation <= - 0.6) {
-        this.bird.animatedSpray.rotation = this.bird.animatedSpray.rotation
-      } else {
-        this.bird.animatedSpray.rotation -= 0.6
-      }
+      // решил что код ниже не нужен так как ставлю поптицу в конкретное положениие так анимация плавнее
+      // if (this.bird.animatedSpray.rotation <= - 0.6) {
+      //   this.bird.animatedSpray.rotation = this.bird.animatedSpray.rotation
+      // } else {
+      //   this.bird.animatedSpray.rotation -= 0.6
+      // }
+      this.bird.animatedSpray.rotation = - 0.6
       this.bird.y -= 50
     },
+    //  движение заднего фона
     moveBg() {
       this.tilingSpriteBG.tilePosition.x -= 0.8;
     },
+    //  движение земли
     moveGround() {
       this.ground.tilingSpriteGround.tilePosition.x -= 1.1;
     },
+    //  движение трубы
     movePipe() {
       if (this.pipe.x <= -42) {
         this.pipe.x = 225
@@ -170,6 +180,7 @@ export default {
       }
       this.pipe.x -= 1
     },
+    //  удар с верхней рубой 
     hitTopPipe() {
       // стороны птицы
       let birdTop = this.bird.y;
@@ -192,6 +203,7 @@ export default {
         console.log('столкновения верхней трубы');
       }
     },
+    // удар об нижнюю трубу 
     hitBottomPipe() {
       let birdTop = this.bird.y;
       let birdRight = this.bird.x + this.bird.animatedSpray.width;
@@ -213,6 +225,7 @@ export default {
         console.log('столкновения нижней трубы');
       }
     },
+    // удар с землёй
     hitGround() {
       let birdBottom = this.bird.y + this.bird.animatedSpray.height;
       let groundTop = this.ground.tilingSpriteGround.y
@@ -220,6 +233,7 @@ export default {
           console.log('столкновение с землёй');
       }
     },
+    //  вылет за рамку
     climbsBorders(){
       let birdTop = this.bird.y;
       if (birdTop <= 0) {
@@ -227,6 +241,7 @@ export default {
       }
 
     },
+    // слушаем нажатия 
     listener() {
       window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowUp' || e.code === "Space") {
@@ -234,6 +249,7 @@ export default {
         }
       })
     },
+    //  рандомная высота трубы
     randomHeight() {
       return Math.round(Math.random() * (350 - 220) + 220)
     }
