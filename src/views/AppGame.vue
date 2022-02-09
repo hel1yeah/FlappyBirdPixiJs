@@ -15,7 +15,7 @@ import pipeTopURL from './../assets/img/pipe-top.png'
 import charBirdImg1 from './../assets/img/drags/fly-bird1.png';
 import charBirdImg2 from './../assets/img/drags/fly-bird2.png';
 import charBirdImg3 from './../assets/img/drags/fly-bird3.png';
-import charBirdImg4 from './../assets/img/drags/fly-bird4.png';
+
 
 export default {
   name: 'AppGame',
@@ -28,7 +28,7 @@ export default {
         height: 400,
       }, // приложение 
       bird: {
-        alienImages: [charBirdImg1, charBirdImg2, charBirdImg3, charBirdImg4], // масив ссылок на картинки
+        alienImages: [charBirdImg1, charBirdImg2, charBirdImg3], // масив ссылок на картинки
         textureArray: [], // текстуры картинок выше
         animatedSpray: null, // анимированная анимация из 4х текстур выше 
         x: 30,
@@ -80,7 +80,7 @@ export default {
       });
 
       wrapper.appendChild(this.app.game.view); // показывем на страницуе 
-
+      this.app.game.stage.interactive = true;
       this.renderSourse();  // загрузка всех картинок 
       this.stageAdd(); // добавление на сцену текстур
       this.setPositionPipe() // установка и размещение труб
@@ -95,9 +95,8 @@ export default {
       this.app.game.stage.addChild(this.bird.animatedSpray); // добавить аниммСПрей на сцену 
       this.bird.animatedSpray.animationSpeed = 0.2; // скорость анимации 
       this.bird.animatedSpray.rotation
-
-      this.app.game.stage.interactive = true;
-
+      this.bird.animatedSpray.width = 27
+      this.bird.animatedSpray.height = 19
 
       this.app.game.stage.on('click', () => this.moveBird())
       this.bird.animatedSpray.play(); // запустить анимацию 
