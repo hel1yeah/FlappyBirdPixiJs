@@ -1,6 +1,5 @@
 <template>
-    <div class="wrapper">
-    </div>
+  <div class="wrapper"></div>
 </template>
 
 <script>
@@ -21,7 +20,8 @@ export default {
   name: 'AppGame',
   data() {
     return {
-      game: true,
+      game: false,
+      counterStart: 0,
       app: {
         game: null,
         width: 225,
@@ -32,7 +32,7 @@ export default {
         textureArray: [], // текстуры картинок выше
         animatedSpray: null, // анимированная анимация из 4х текстур выше 
         x: 30,
-        y: 220,
+        y: 150,
       }, // птица 
       pipe: {
         pipeTextureBottom: null, //
@@ -79,6 +79,15 @@ export default {
         buttonMode: true, // hz
       });
 
+      this.app.game.stage.on('click', () => {
+        if (!this.game) {
+          this.app.game.stage.on('click', () => this.setCounterStart())
+        } else {
+          this.moveBird()
+          
+        }
+      })
+
       wrapper.appendChild(this.app.game.view); // показывем на страницуе 
       this.app.game.stage.interactive = true;
       this.renderSourse();  // загрузка всех картинок 
@@ -93,19 +102,23 @@ export default {
       this.bird.animatedSpray = new PIXI.AnimatedSprite(this.bird.textureArray);  // создание анимированного спрея на основе 4х картинок
       this.bird.animatedSpray.position.set(this.bird.x, this.bird.y);
       this.app.game.stage.addChild(this.bird.animatedSpray); // добавить аниммСПрей на сцену 
-      this.bird.animatedSpray.animationSpeed = 0.2; // скорость анимации 
+      this.bird.animatedSpray.animationSpeed = 0.12; // скорость анимации 
       this.bird.animatedSpray.rotation
       this.bird.animatedSpray.width = 27
       this.bird.animatedSpray.height = 19
 
-      this.app.game.stage.on('click', () => this.moveBird())
+
       this.bird.animatedSpray.play(); // запустить анимацию 
 
-      if (this.game) {
-        this.app.game.ticker.add(() => { //ticker это обьект  пикси жс что запускает вызовы в каждом кадре реквест анимейшитн фрейм
-          this.moveGround()
-          this.moveBg();
-          this.pipe.Ty = this.pipe.By - this.pipe.height - this.pipe.pipeDdistance
+
+
+
+
+      this.app.game.ticker.add(() => { //ticker это обьект  пикси жс что запускает вызовы в каждом кадре реквест анимейшитн фрейм
+        this.moveGround()
+        this.moveBg();
+        if (this.game) {
+
           this.bird.animatedSpray.position.set(this.bird.x, this.bird.y);
           this.gravitiBird()
           this.movePipe()
@@ -114,8 +127,11 @@ export default {
           this.hitBottomPipe()
           this.hitGround()
           this.climbsBorders()
-        });
-      }
+        }
+
+
+      });
+
 
     },
     // загрузка всех картинок 
@@ -165,19 +181,20 @@ export default {
     },
     //  движение заднего фона
     moveBg() {
-      this.tilingSpriteBG.tilePosition.x -= 0.8;
+      this.tilingSpriteBG.tilePosition.x -= 1.2;
     },
     //  движение земли
     moveGround() {
-      this.ground.tilingSpriteGround.tilePosition.x -= 1.1;
+      this.ground.tilingSpriteGround.tilePosition.x -= 2.2;
     },
     //  движение трубы
     movePipe() {
+      this.pipe.Ty = this.pipe.By - this.pipe.height - this.pipe.pipeDdistance
       if (this.pipe.x <= -42) {
         this.pipe.x = 225
         this.pipe.By = this.randomHeight()
       }
-      this.pipe.x -= 1
+      this.pipe.x -= 2
     },
     //  удар с верхней рубой 
     hitTopPipe() {
@@ -228,15 +245,23 @@ export default {
     hitGround() {
       let birdBottom = this.bird.y + this.bird.animatedSpray.height;
       let groundTop = this.ground.tilingSpriteGround.y
-      if (birdBottom > groundTop){
-          console.log('столкновение с землёй');
+      if (birdBottom > groundTop) {
+        console.log('столкновение с землёй');
       }
     },
     //  вылет за рамку
-    climbsBorders(){
+    climbsBorders() {
       let birdTop = this.bird.y;
       if (birdTop <= 0) {
         console.log('за рамкой ');
+      }
+
+    },
+
+    setCounterStart() {
+      this.counterStart += 1
+      if (this.counterStart >= 1) {
+        this.game = true
       }
 
     },
@@ -244,7 +269,8 @@ export default {
     listener() {
       window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowUp' || e.code === "Space") {
-          this.moveBird()
+          this.game ? this.moveBird() : ''
+          
         }
       })
     },
@@ -257,7 +283,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.wrapper{
+.wrapper {
   width: 225px;
   height: 400px;
 }
