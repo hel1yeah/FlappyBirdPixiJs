@@ -77,7 +77,11 @@ export default {
         texture: null,
         sprite: null,
       },
-
+      logoContainer: {
+        container: null,
+        x: 20,
+        y: 150,
+      },
       factor: 1, // множитель 
     }
   },
@@ -166,7 +170,6 @@ export default {
       this.logoBird.texture = PIXI.Texture.from(birdLogo)
       this.buttonStart.texture = PIXI.Texture.from(buttonStartURL)
       this.ground.groundTexture = PIXI.Texture.from(groundURL);
-
     },
     createdSprites() {
       this.logoFlappy.sprite = PIXI.Sprite.from(this.logoFlappy.texture)

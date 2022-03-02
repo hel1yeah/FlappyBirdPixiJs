@@ -9,6 +9,8 @@ import bgUrl from './../assets/img/bg.png';
 import groundURL from './../assets/img/ground.png'
 import pipeBottomURL from './../assets/img/pipe-bottom.png'
 import pipeTopURL from './../assets/img/pipe-top.png'
+import clueTapURL from './../assets/img/clue-tap.png'
+
 
 
 import charBirdImg1 from './../assets/img/drags/fly-bird1.png';
@@ -20,7 +22,8 @@ export default {
   name: 'AppGame',
   data() {
     return {
-      game: false,
+      gameStart: false,
+      gameFinish: false,
       counterStart: 0,
       app: {
         game: null,
@@ -52,9 +55,16 @@ export default {
         x: 0,
         y: 370
       },
+      clue: {
+        textureClue: null,
+        spriteClue: null,
+        x: 82,
+        y: 220,
+      },
       bgTexture: null, // бг
       tilingSpriteBG: null, //
-
+      countSin: 0,
+      jumping: 0,
     };
   },
   computed: {
@@ -80,12 +90,19 @@ export default {
       });
 
       this.app.game.stage.on('click', () => {
-        if (!this.game) {
-          this.app.game.stage.on('click', () => this.setCounterStart())
-        } else {
-          this.moveBird()
-          
+        if (!this.gameFinish) {
+          if (!this.gameStart) {
+            this.start()
+          } else {
+            // this.moveBird()
+            this.jumping = 8
+          }
         }
+
+
+
+        
+
       })
 
       wrapper.appendChild(this.app.game.view); // показывем на страницуе 
@@ -104,31 +121,39 @@ export default {
       this.app.game.stage.addChild(this.bird.animatedSpray); // добавить аниммСПрей на сцену 
       this.bird.animatedSpray.animationSpeed = 0.12; // скорость анимации 
       this.bird.animatedSpray.rotation
+      // this.bird.animatedSpray.anchor.set(0.5) '// установить центер спайта
       this.bird.animatedSpray.width = 27
       this.bird.animatedSpray.height = 19
 
-
+      this.setPositionClue()
       this.bird.animatedSpray.play(); // запустить анимацию 
 
-
-
-
-
       this.app.game.ticker.add(() => { //ticker это обьект  пикси жс что запускает вызовы в каждом кадре реквест анимейшитн фрейм
-        this.moveGround()
-        this.moveBg();
-        if (this.game) {
-
+        if (!this.gameFinish) {
+          this.moveGround()
+          this.moveBg();
+          if (this.gameStart) {
+            if (this.jumping) {
+              this.moveBird()
+            } 
+            if (this.jumping >= 50) {
+              this.jumping = 0
+            }
+            
+            this.bird.animatedSpray.position.set(this.bird.x, this.bird.y);
+            this.gravitiBird()
+            this.movePipe()
+            this.setPositionPipe()
+            this.hitTopPipe()
+            this.hitBottomPipe()
+            this.hitGround()
+            this.climbsBorders()
+            
+          }
+        } else {
           this.bird.animatedSpray.position.set(this.bird.x, this.bird.y);
-          this.gravitiBird()
-          this.movePipe()
-          this.setPositionPipe()
-          this.hitTopPipe()
-          this.hitBottomPipe()
-          this.hitGround()
-          this.climbsBorders()
+          this.circulationBird()
         }
-
 
       });
 
@@ -143,6 +168,11 @@ export default {
       this.pipe.pipeSpriteTop = PIXI.Sprite.from(this.pipe.pipeTextureTop)
       this.ground.groundTexture = PIXI.Texture.from(groundURL);
 
+      this.clue.textureClue = PIXI.Texture.from(clueTapURL)
+      this.clue.spriteClue = PIXI.Sprite.from(this.clue.textureClue)
+
+
+
       this.tilingSpriteBG = new PIXI.TilingSprite(this.bgTexture, 225, 400);
       this.ground.tilingSpriteGround = new PIXI.TilingSprite(this.ground.groundTexture, 263, 86);
       this.ground.tilingSpriteGround.position.set(this.ground.x, this.ground.y);
@@ -153,13 +183,17 @@ export default {
       this.app.game.stage.addChild(this.pipe.pipeSpriteBottom);
       this.app.game.stage.addChild(this.pipe.pipeSpriteTop);
       this.app.game.stage.addChild(this.ground.tilingSpriteGround);
+      this.app.game.stage.addChild(this.clue.spriteClue);
     },
     // установка позиций верхней и нижней трубы
     setPositionPipe() {
       this.pipe.pipeSpriteBottom.position.set(this.pipe.x, this.pipe.By);
       this.pipe.pipeSpriteTop.position.set(this.pipe.x, this.pipe.By - this.pipe.height - this.pipe.pipeDdistance);
     },
-    // падение птицы (типо)
+    setPositionClue() {
+      this.clue.spriteClue.position.set(this.clue.x, this.clue.y)
+    },
+    // падение птицы 
     gravitiBird() {
       if (this.bird.animatedSpray.rotation >= 1) {
         this.bird.animatedSpray.rotation = this.bird.animatedSpray.rotation
@@ -170,19 +204,32 @@ export default {
     },
     // движение птицы при клике 
     moveBird() {
-      // решил что код ниже не нужен так как ставлю поптицу в конкретное положениие так анимация плавнее
-      // if (this.bird.animatedSpray.rotation <= - 0.6) {
-      //   this.bird.animatedSpray.rotation = this.bird.animatedSpray.rotation
-      // } else {
-      //   this.bird.animatedSpray.rotation -= 0.6
-      // }
       this.bird.animatedSpray.rotation = - 0.6
-      this.bird.y -= 50
+      this.bird.y -= 10
+      this.jumping += 8
+    },
+    //  когда конец игры то закрутить птицу и увеличть 
+    circulationBird() {
+      this.countSin += 0.001
+      if (this.countSin > 0.1) {
+        this.countSin = 0
+      } else {
+        this.bird.animatedSpray.rotation += 0.1
+        this.bird.animatedSpray.scale.x += Math.sin(this.countSin)
+        this.bird.animatedSpray.scale.y += Math.sin(this.countSin)
+      }
+      if (this.bird.y > 200) {
+        this.bird.y -= 10
+      } else {
+        this.bird.y -= 4
+      }
+      this.bird.x += 2
     },
     //  движение заднего фона
     moveBg() {
       this.tilingSpriteBG.tilePosition.x -= 1.2;
     },
+
     //  движение земли
     moveGround() {
       this.ground.tilingSpriteGround.tilePosition.x -= 2.2;
@@ -216,6 +263,7 @@ export default {
         birdBottom > topPipeTop
 
       ) {
+        this.finish()
         console.log('столкновения верхней трубы');
       }
     },
@@ -239,6 +287,7 @@ export default {
 
       ) {
         console.log('столкновения нижней трубы');
+        this.finish()
       }
     },
     // удар с землёй
@@ -247,6 +296,7 @@ export default {
       let groundTop = this.ground.tilingSpriteGround.y
       if (birdBottom > groundTop) {
         console.log('столкновение с землёй');
+        this.finish()
       }
     },
     //  вылет за рамку
@@ -258,19 +308,24 @@ export default {
 
     },
 
-    setCounterStart() {
-      this.counterStart += 1
-      if (this.counterStart >= 1) {
-        this.game = true
-      }
-
+    start() {
+      this.gameStart = !this.gameStart
+      this.app.game.stage.removeChild(this.clue.spriteClue);
+    },
+    finish() {
+      this.gameStart = !this.gameStart
+      this.gameFinish = true
     },
     // слушаем нажатия 
     listener() {
       window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowUp' || e.code === "Space") {
-          this.game ? this.moveBird() : ''
-          
+          if (!this.gameStart) {
+            this.start()
+          } else {
+            this.moveBird()
+          }
+
         }
       })
     },
