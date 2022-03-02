@@ -61,6 +61,12 @@ export default {
         x: 82,
         y: 220,
       },
+      scoreText: {
+        text: 'Score 0',
+        score: 0,
+        x: 100,
+        y: 30,
+      },
       bgTexture: null, // бг
       tilingSpriteBG: null, //
       countSin: 0,
@@ -98,35 +104,24 @@ export default {
             this.jumping = 8
           }
         }
-
-
-
-        
-
       })
 
       wrapper.appendChild(this.app.game.view); // показывем на страницуе 
       this.app.game.stage.interactive = true;
-      this.renderSourse();  // загрузка всех картинок 
+
+      this.addText() //добавление на сцену текста 
+      this.renderSourse(); // загрузка всех картинок 
       this.stageAdd(); // добавление на сцену текстур
       this.setPositionPipe() // установка и размещение труб
-
+      this.setPositionClue()
+      this.setPositionScoreText()
       for (let i = 0; i < this.bird.alienImages.length; i++) {
         let texture = PIXI.Texture.from(this.bird.alienImages[i]);
         this.bird.textureArray.push(texture);
       }
 
-      this.bird.animatedSpray = new PIXI.AnimatedSprite(this.bird.textureArray);  // создание анимированного спрея на основе 4х картинок
-      this.bird.animatedSpray.position.set(this.bird.x, this.bird.y);
-      this.app.game.stage.addChild(this.bird.animatedSpray); // добавить аниммСПрей на сцену 
-      this.bird.animatedSpray.animationSpeed = 0.12; // скорость анимации 
-      this.bird.animatedSpray.rotation
-      // this.bird.animatedSpray.anchor.set(0.5) '// установить центер спайта
-      this.bird.animatedSpray.width = 27
-      this.bird.animatedSpray.height = 19
+      this.createdAnimatedSprite()
 
-      this.setPositionClue()
-      this.bird.animatedSpray.play(); // запустить анимацию 
 
       this.app.game.ticker.add(() => { //ticker это обьект  пикси жс что запускает вызовы в каждом кадре реквест анимейшитн фрейм
         if (!this.gameFinish) {
@@ -135,11 +130,11 @@ export default {
           if (this.gameStart) {
             if (this.jumping) {
               this.moveBird()
-            } 
+            }
             if (this.jumping >= 50) {
               this.jumping = 0
             }
-            
+
             this.bird.animatedSpray.position.set(this.bird.x, this.bird.y);
             this.gravitiBird()
             this.movePipe()
@@ -148,7 +143,7 @@ export default {
             this.hitBottomPipe()
             this.hitGround()
             this.climbsBorders()
-            
+
           }
         } else {
           this.bird.animatedSpray.position.set(this.bird.x, this.bird.y);
@@ -177,6 +172,22 @@ export default {
       this.ground.tilingSpriteGround = new PIXI.TilingSprite(this.ground.groundTexture, 263, 86);
       this.ground.tilingSpriteGround.position.set(this.ground.x, this.ground.y);
     },
+    createdAnimatedSprite() {
+      this.bird.animatedSpray = new PIXI.AnimatedSprite(this.bird.textureArray);  // создание анимированного спрея на основе 4х картинок
+      this.bird.animatedSpray.position.set(this.bird.x, this.bird.y);
+      this.app.game.stage.addChild(this.bird.animatedSpray); // добавить аниммСПрей на сцену 
+      this.bird.animatedSpray.animationSpeed = 0.12; // скорость анимации 
+      this.bird.animatedSpray.rotation
+      // this.bird.animatedSpray.anchor.set(0.5) '// установить центер спайта
+      this.bird.animatedSpray.width = 27
+      this.bird.animatedSpray.height = 19
+
+
+      this.bird.animatedSpray.play(); // запустить анимацию 
+    },
+    addText() {
+      this.scoreText.text = new PIXI.Text('test');
+    },
     stageAdd() {
       // добавление на сцену 
       this.app.game.stage.addChild(this.tilingSpriteBG);
@@ -184,6 +195,8 @@ export default {
       this.app.game.stage.addChild(this.pipe.pipeSpriteTop);
       this.app.game.stage.addChild(this.ground.tilingSpriteGround);
       this.app.game.stage.addChild(this.clue.spriteClue);
+
+      this.app.game.stage.addChild(this.scoreText.text) // добавление текста 
     },
     // установка позиций верхней и нижней трубы
     setPositionPipe() {
@@ -192,6 +205,17 @@ export default {
     },
     setPositionClue() {
       this.clue.spriteClue.position.set(this.clue.x, this.clue.y)
+    },
+    setPositionText() {
+      this.clue.spriteClue.position.set(this.clue.x, this.clue.y)
+    },
+    setPositionScoreText() {
+      this.scoreText.text.position.set(this.scoreText.x,  this.scoreText.y);
+      this.scoreText.text.anchor.set(0.5, 0.5);
+    },
+    setScoreText() {
+      this.scoretext.score++
+      this.scoretext.text.setText(`Score: ${this.scoreText.score}`);
     },
     // падение птицы 
     gravitiBird() {
