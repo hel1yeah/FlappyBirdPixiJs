@@ -62,7 +62,8 @@ export default {
         y: 220,
       },
       scoreText: {
-        text: 'Score 0',
+        style: null,
+        text: '0',
         score: 0,
         x: 100,
         y: 30,
@@ -143,6 +144,7 @@ export default {
             this.hitBottomPipe()
             this.hitGround()
             this.climbsBorders()
+            this.setScoreText()
 
           }
         } else {
@@ -182,11 +184,21 @@ export default {
       this.bird.animatedSpray.width = 27
       this.bird.animatedSpray.height = 19
 
-
+      this.bird.animatedSpray.scale.x = 1
+      this.bird.animatedSpray.scale.y = 1
       this.bird.animatedSpray.play(); // запустить анимацию 
     },
     addText() {
-      this.scoreText.text = new PIXI.Text('test');
+      this.scoreText.text = new PIXI.Text(this.scoreText.text,
+        {
+          fontFamily: 'BF',
+          fontSize: 30,
+          fontWeight: 'bold',
+          fill: ['#ffffff'],
+          stroke: '#000',
+          strokeThickness: 5,
+        }
+      );
     },
     stageAdd() {
       // добавление на сцену 
@@ -210,12 +222,13 @@ export default {
       this.clue.spriteClue.position.set(this.clue.x, this.clue.y)
     },
     setPositionScoreText() {
-      this.scoreText.text.position.set(this.scoreText.x,  this.scoreText.y);
-      this.scoreText.text.anchor.set(0.5, 0.5);
+      const width = (this.app.width / 2)
+      this.scoreText.text.position.set(width, this.scoreText.y)
+
     },
     setScoreText() {
-      this.scoretext.score++
-      this.scoretext.text.setText(`Score: ${this.scoreText.score}`);
+      this.scoreText.score++
+      this.scoreText.text.text = `${this.scoreText.score}`
     },
     // падение птицы 
     gravitiBird() {
@@ -352,6 +365,15 @@ export default {
 
         }
       })
+      window.addEventListener('touchend', (e) => {
+        console.log(e);
+          if (!this.gameStart) {
+            this.start()
+          } else {
+            this.moveBird()
+          }
+      })
+
     },
     //  рандомная высота трубы
     randomHeight() {

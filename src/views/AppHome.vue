@@ -195,9 +195,9 @@ export default {
       this.ground.tilingSpriteGround.position.set(this.ground.x, this.ground.y);
       this.buttonStart.sprite.position.set(this.buttonStart.x, this.buttonStart.y);
     },
-    setCursorPointer(){
-        const pointerIcon = `url(${pointer}),auto`
-        this.app.game.renderer.plugins.interaction.cursorStyles.pointer = pointerIcon;
+    setCursorPointer() {
+      const pointerIcon = `url(${pointer}),auto`
+      this.app.game.renderer.plugins.interaction.cursorStyles.pointer = pointerIcon;
     },
     // слушаем нажатия enter
     listener() {
@@ -205,6 +205,9 @@ export default {
         if (e.key === 'Enter') {
           this.startGame()
         }
+      })
+      window.addEventListener('touchend', (e) => {
+          this.startGame()
       })
     },
   }
