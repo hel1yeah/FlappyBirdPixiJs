@@ -200,6 +200,9 @@ export default {
           this.startGame()
         }
       })
+      window.addEventListener('touchend', (e) => {
+        this.startGame()
+      })
     },
   }
 }

@@ -233,11 +233,14 @@ export default {
 .game-over {
   width: 225px;
   height: 400px;
-  position: reletive;
+  flex-grow: 1;
   background-image: url("./../assets/img/bg.png");
   background-position: center center;
   background-repeat: no-repeat;
   background-size: contain;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .record {

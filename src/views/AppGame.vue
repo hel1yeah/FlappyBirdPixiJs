@@ -388,7 +388,11 @@ export default {
 
 <style lang="scss" scoped>
 .wrapper {
+  flex-grow: 1;
   width: 225px;
   height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content:center;
 }
 </style>
