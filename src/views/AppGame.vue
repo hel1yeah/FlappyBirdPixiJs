@@ -116,6 +116,7 @@ export default {
       this.setPositionPipe() // установка и размещение труб
       this.setPositionClue()
       this.setPositionScoreText()
+
       for (let i = 0; i < this.bird.alienImages.length; i++) {
         let texture = PIXI.Texture.from(this.bird.alienImages[i]);
         this.bird.textureArray.push(texture);
@@ -144,7 +145,6 @@ export default {
             this.hitBottomPipe()
             this.hitGround()
             this.climbsBorders()
-            this.setScoreText()
 
           }
         } else {
@@ -222,9 +222,8 @@ export default {
       this.clue.spriteClue.position.set(this.clue.x, this.clue.y)
     },
     setPositionScoreText() {
-      const width = (this.app.width / 2)
+      const width = (this.app.width / 2) - 10
       this.scoreText.text.position.set(width, this.scoreText.y)
-
     },
     setScoreText() {
       this.scoreText.score++
@@ -274,6 +273,11 @@ export default {
     //  движение трубы
     movePipe() {
       this.pipe.Ty = this.pipe.By - this.pipe.height - this.pipe.pipeDdistance
+
+      if (this.pipe.x < this.bird.x && this.pipe.x > this.bird.x - 2) {
+        this.setScoreText()
+      }
+
       if (this.pipe.x <= -42) {
         this.pipe.x = 225
         this.pipe.By = this.randomHeight()
@@ -352,28 +356,27 @@ export default {
     finish() {
       this.gameStart = !this.gameStart
       this.gameFinish = true
+      this.$store.dispatch('setScore', this.scoreText.score)
+
+      this.$router.push({ name: 'game-over' })
+    },
+    chekGame() {
+      if (!this.gameStart) {
+        this.start()
+      } else {
+        this.moveBird()
+      }
     },
     // слушаем нажатия 
     listener() {
       window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowUp' || e.code === "Space") {
-          if (!this.gameStart) {
-            this.start()
-          } else {
-            this.moveBird()
-          }
-
+          this.chekGame()
         }
       })
       window.addEventListener('touchend', (e) => {
-        console.log(e);
-          if (!this.gameStart) {
-            this.start()
-          } else {
-            this.moveBird()
-          }
+        this.chekGame()
       })
-
     },
     //  рандомная высота трубы
     randomHeight() {
