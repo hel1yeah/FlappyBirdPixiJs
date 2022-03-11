@@ -5,10 +5,13 @@
         <component :is="Component" />
       </transition>
     </router-view>
+    <app-ticker-text />
   </div>
 </template>
 
 <script>
+
+import AppTickerText from './components/AppTickerText.vue';
 
 import AppGame from "./views/AppGame.vue";
 import AppHome from "./views/AppHome.vue";
@@ -17,7 +20,8 @@ export default {
   name: 'app',
   components: {
     AppGame,
-    AppHome
+    AppHome,
+    AppTickerText,
   },
   data() {
     return {

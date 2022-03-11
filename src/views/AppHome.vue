@@ -209,6 +209,7 @@ export default {
 .home {
   width: 225px;
   height: 400px;
+  flex-grow: 1;
   background-image: url("./../assets/img/bg.png");
   background-position: center center;
   background-repeat: no-repeat;
