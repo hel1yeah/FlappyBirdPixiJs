@@ -6,12 +6,11 @@
 
 import * as PIXI from 'pixi.js';
 import bgUrl from './../assets/img/bg.png';
+
 import groundURL from './../assets/img/ground.png'
 import pipeBottomURL from './../assets/img/pipe-bottom.png'
 import pipeTopURL from './../assets/img/pipe-top.png'
 import clueTapURL from './../assets/img/clue-tap.png'
-
-
 
 import charBirdImg1 from './../assets/img/drags/fly-bird1.png';
 import charBirdImg2 from './../assets/img/drags/fly-bird2.png';
@@ -97,6 +96,16 @@ export default {
       });
 
       this.app.game.stage.on('click', () => {
+        if (!this.gameFinish) {
+          if (!this.gameStart) {
+            this.start()
+          } else {
+            // this.moveBird()
+            this.jumping = 8
+          }
+        }
+      })
+      this.app.game.stage.on('touched', () => {
         if (!this.gameFinish) {
           if (!this.gameStart) {
             this.start()
@@ -358,7 +367,7 @@ export default {
       this.gameFinish = true
       this.$store.dispatch('setScore', this.scoreText.score)
 
-      this.$router.push({ name: 'game-over' })
+      this.$router.push({ name: 'gameover' })
     },
     chekGame() {
       if (!this.gameStart) {

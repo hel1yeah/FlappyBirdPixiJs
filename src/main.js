@@ -1,10 +1,16 @@
-import { createApp } from 'vue';
-import App from './App.vue';
-import router from './router/router.js';
-import store from './store/store.js';
+import Vue from 'vue'
+import App from './App.vue'
 
-import 'normalize-scss';
+import router from './router/router';
+import store from './store/store';
+
+import './../node_modules/normalize-scss/sass/_normalize.scss';
 import './assets/scss/main.scss';
 
-const app = createApp(App)
-app.use(router).use(store).mount('#app');
+Vue.config.productionTip = false
+
+new Vue({
+  router,
+  store,
+  render: h => h(App)
+}).$mount('#app')

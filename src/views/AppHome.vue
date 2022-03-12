@@ -5,7 +5,7 @@
 <script>
 
 import * as PIXI from 'pixi.js';
-import bgUrl from './../assets/img/bg.png';
+
 import groundURL from './../assets/img/ground.png'
 import buttonStartURL from './../assets/img/start.png'
 import flappyLogo from './../assets/img/flappy.png'
