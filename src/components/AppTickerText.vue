@@ -1,11 +1,11 @@
 <template>
   <div class="ticker-text">
-    <marquee 
+    <!-- <marquee 
       class="ticker-text__marquee" 
       behavior="scroll" 
       direction="left">
         Російський військовий корабель, іди нахуй
-    </marquee>
+    </marquee> -->
   </div>
 </template>
 
@@ -19,6 +19,7 @@ export default {
 .ticker-text {
   flex-shrink: 0;
   width: 100%;
+  height: 5vh;
   background-color: red;
   background-image: url('./../assets/img/metal.webp');
   background-size: cover;
