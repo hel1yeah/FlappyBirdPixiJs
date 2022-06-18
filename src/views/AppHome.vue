@@ -5,17 +5,17 @@
 <script>
 
 import * as PIXI from 'pixi.js';
-import bgUrl from './../assets/img/bg.png';
-import groundURL from './../assets/img/ground.png'
-import buttonStartURL from './../assets/img/start.png'
-import flappyLogo from './../assets/img/flappy.png'
-import birdLogo from './../assets/img/bird-l.png'
+import bgUrl from '@/assets/img/bg.png';
+import groundURL from '@/assets/img/ground.png'
+import buttonStartURL from '@/assets/img/start.png'
+import flappyLogo from '@/assets/img/flappy.png'
+import birdLogo from '@/assets/img/bird-l.png'
 
-import pointer from './../assets/img/pointer.png'
+import pointer from '@/assets/img/pointer.png'
 
-import charBirdImg1 from './../assets/img/drags/fly-bird1.png';
-import charBirdImg2 from './../assets/img/drags/fly-bird2.png';
-import charBirdImg3 from './../assets/img/drags/fly-bird3.png';
+import charBirdImg1 from '@/assets/img/drags/fly-bird1.png';
+import charBirdImg2 from '@/assets/img/drags/fly-bird2.png';
+import charBirdImg3 from '@/assets/img/drags/fly-bird3.png';
 
 
 export default {

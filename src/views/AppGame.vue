@@ -5,17 +5,17 @@
 <script>
 
 import * as PIXI from 'pixi.js';
-import bgUrl from './../assets/img/bg.png';
-import groundURL from './../assets/img/ground.png'
-import pipeBottomURL from './../assets/img/pipe-bottom.png'
-import pipeTopURL from './../assets/img/pipe-top.png'
-import clueTapURL from './../assets/img/clue-tap.png'
+import bgUrl from '@/assets/img/bg.png';
+import groundURL from '@/assets/img/ground.png'
+import pipeBottomURL from '@/assets/img/pipe-bottom.png'
+import pipeTopURL from '@/assets/img/pipe-top.png'
+import clueTapURL from '@/assets/img/clue-tap.png'
 
 
 
-import charBirdImg1 from './../assets/img/drags/fly-bird1.png';
-import charBirdImg2 from './../assets/img/drags/fly-bird2.png';
-import charBirdImg3 from './../assets/img/drags/fly-bird3.png';
+import charBirdImg1 from '@/assets/img/drags/fly-bird1.png';
+import charBirdImg2 from '@/assets/img/drags/fly-bird2.png';
+import charBirdImg3 from '@/assets/img/drags/fly-bird3.png';
 
 
 export default {

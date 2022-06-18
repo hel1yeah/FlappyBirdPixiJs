@@ -11,10 +11,10 @@
 
 <script>
 
-import AppTickerText from './components/AppTickerText.vue';
+import AppTickerText from '@/components/AppTickerText.vue';
 
-import AppGame from "./views/AppGame.vue";
-import AppHome from "./views/AppHome.vue";
+import AppGame from "@/views/AppGame.vue";
+import AppHome from "@/views/AppHome.vue";
 
 export default {
   name: 'app',

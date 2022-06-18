@@ -2,11 +2,12 @@
   "name": "flappybirdpixijs",
   "version": "0.0.0",
   "scripts": {
-    "dev": "vite --open",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "firebase": "^9.8.3",
     "normalize-scss": "^7.0.1",
     "pixi.js": "^6.2.1",
     "vue": "^3.2.25",

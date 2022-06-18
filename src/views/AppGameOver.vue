@@ -6,12 +6,12 @@
 
 import * as PIXI from 'pixi.js';
 
-import groundURL from './../assets/img/ground.png'
-import buttonStartURL from './../assets/img/start.png'
-import gameOverImg from './../assets/img/game-over.png'
-import gshotBird from './../assets/img/ghost-bird.png'
+import groundURL from '@/assets/img/ground.png'
+import buttonStartURL from '@/assets/img/start.png'
+import gameOverImg from '@/assets/img/game-over.png'
+import gshotBird from '@/assets/img/ghost-bird.png'
 
-import pointer from './../assets/img/pointer.png'
+import pointer from '@/assets/img/pointer.png'
 
 import { mapState } from 'vuex'
 
