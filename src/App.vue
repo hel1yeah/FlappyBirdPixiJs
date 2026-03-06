@@ -14,26 +14,11 @@
 
 import AppTickerText from '@/components/AppTickerText.vue';
 
-import AppGame from "@/views/AppGame.vue";
-import AppHome from "@/views/AppHome.vue";
-
 export default {
   name: 'app',
   components: {
-    AppGame,
-    AppHome,
     AppTickerText,
   },
-  data() {
-    return {
-
-    }
-  },
-  computed: {
-    gameStage() {
-      return 'AppGame'
-    }
-  }
 }
 </script>
 

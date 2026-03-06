@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "firebase": "^12.10.0",
+    "js-cookie": "^3.0.5",
     "normalize-scss": "^8.0.0",
     "pixi.js": "^8.16.0",
     "vue": "^3.5.29",

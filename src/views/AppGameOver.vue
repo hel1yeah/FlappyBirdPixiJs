@@ -1,235 +1,198 @@
 <template>
-  <div class="game-over" ref="canvas"></div>
+  <div class="gameover-screen">
+    <div class="game-over" ref="canvas"></div>
+    <div v-if="scoreHistory.length" class="history">
+      <div class="history__title">history</div>
+      <div class="history__list">
+        <div
+          v-for="(entry, i) in scoreHistory"
+          :key="i"
+          :class="['history__row', { 'history__row--current': i === 0 && justFinished }]"
+        >
+          <span class="history__score">{{ entry.score }}</span>
+          <span class="history__date">{{ entry.date }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
-
 import { markRaw } from 'vue';
 import * as PIXI from 'pixi.js';
+import groundURL from '@/assets/img/ground.png';
+import buttonStartURL from '@/assets/img/start.png';
+import gameOverImg from '@/assets/img/game-over.png';
+import gshotBird from '@/assets/img/ghost-bird.png';
+import pointer from '@/assets/img/pointer.png';
 
-import groundURL from '@/assets/img/ground.png'
-import buttonStartURL from '@/assets/img/start.png'
-import gameOverImg from '@/assets/img/game-over.png'
-import gshotBird from '@/assets/img/ghost-bird.png'
+import { initPixiApp, createSprite, createTilingSprite, createText, destroyApp } from '@/utils/pixi';
+import { GAME_WIDTH, GAME_HEIGHT, GROUND_WIDTH, GROUND_HEIGHT } from '@/utils/constants';
+import { mapState } from 'vuex';
 
-import pointer from '@/assets/img/pointer.png'
+const ALL_ASSETS = [groundURL, buttonStartURL, gameOverImg, gshotBird];
+const GROUND_Y = 350;
 
-import { mapState } from 'vuex'
+const MEDAL_THRESHOLDS = [
+  { min: 30, label: 'GOLD', color: 0xffd700 },
+  { min: 20, label: 'SILVER', color: 0xc0c0c0 },
+  { min: 10, label: 'BRONZE', color: 0xcd7f32 },
+];
 
 export default {
-  name: "Home",
+  name: 'AppGameOver',
   data() {
     return {
-      app: {
-        game: null,
-        width: 225,
-        height: 400,
-      }, // application
-      bird: {
-        texture: null, // texture
-        sprite: null, // sprite
-        x: 158,
-        y: 5,
-        width: 27,
-        height: 19,
-      },
-      gameOver: {
-        x: 0,
-        y: 0,
-        texture: null,
-        sprite: null,
-        width: 80,
-        height: 32,
-      },
-      logoContainer: {
-        container: null,
-        x: 20,
-        y: 150,
-      },
-      ground: {
-        groundTexture: null, //
-        tilingSpriteGround: null, //
-        x: 0,
-        y: 350
-      },
-      buttonStart: {
-        width: 64,
-        height: 22,
-        x: 80,
-        y: 270,
-        texture: null,
-        sprite: null,
-      },
-      recordText: {
-        style: null,
-        text: '0',
-        score: 0,
-        x: 5,
-        y: 5,
-      },
-      factor: 1, // multiplier
-    }
+      app: null,
+      logoContainer: { container: null, y: 130 },
+      ground: { sprite: null },
+      factor: 1,
+      justFinished: true,
+    };
+  },
+  computed: {
+    ...mapState(['lastScore', 'isNewRecord', 'scoreHistory']),
+    bestRecord() {
+      return parseInt(localStorage.getItem('record') || '0', 10);
+    },
+    medal() {
+      return MEDAL_THRESHOLDS.find(m => this.lastScore >= m.min) || null;
+    },
   },
   async mounted() {
     await this.drawPixi();
-    this.listener();
-
+    this.addListeners();
   },
-  computed: {
-    ...mapState({
-      record: (state) => state.record,
-    }),
-    isRecord() {
-      const record = localStorage.getItem('record')
-      if (!record) {
-        return 0
-      } else {
-        return record
-      }
-    }
+  beforeUnmount() {
+    this.removeListeners();
+    destroyApp(this.app);
   },
   methods: {
     startGame() {
-      this.$router.push({ name: 'game' })
+      this.$router.push({ name: 'game' });
     },
+
     async drawPixi() {
-      let gameOverWrapper = document.querySelector('.game-over')
+      this.app = await initPixiApp(this.$refs.canvas, GAME_WIDTH, GAME_HEIGHT);
 
-      this.app.game = markRaw(new PIXI.Application());
-      await this.app.game.init({
-        backgroundAlpha: 0,
-        width: this.app.width,
-        height: this.app.height,
-      })
-      gameOverWrapper.appendChild(this.app.game.canvas);
+      await PIXI.Assets.load(ALL_ASSETS);
 
-      // load textures
-      await PIXI.Assets.load([groundURL, buttonStartURL, gameOverImg, gshotBird]);
+      // Score panel
+      const panel = markRaw(new PIXI.Container());
+      panel.position.set(20, 5);
 
-      // add text to the stage
-      this.addText()
+      const scoreLabel = createText(`score: ${this.lastScore}`, {
+        fontFamily: 'BF', fontSize: 20, fontWeight: 'bold',
+        fill: 0xffffff, stroke: { color: 0x000000, width: 4 },
+      });
+      scoreLabel.position.set(0, 0);
+      panel.addChild(scoreLabel);
 
-      this.setPositionRecordText()
-      // add to the stage
-      this.stageAdd()
-      // create container for logos
-      this.createdContainer()
-      // set container position
-      this.setPositionContainer()
-      // load textures
-      this.downloadTexture()
-      // create sprites from textures
-      this.createdSprites()
-      // add sprites to container
-      this.addSpriteInContainer()
-      // add sprites to game
-      this.addSpriteInGame()
-      // set gameOver and Bird positions inside container
-      this.setPositionSpritesInContainer()
-      // set ground position inside game
-      this.setPositionSpritesInGame()
-      this.buttonStart.sprite.eventMode = 'static'
-      this.buttonStart.sprite.cursor = `url(${pointer}),auto`
+      const bestLabel = createText(`best: ${this.bestRecord}`, {
+        fontFamily: 'BF', fontSize: 20, fontWeight: 'bold',
+        fill: 0xffffff, stroke: { color: 0x000000, width: 4 },
+      });
+      bestLabel.position.set(0, 28);
+      panel.addChild(bestLabel);
 
+      if (this.isNewRecord && this.lastScore > 0) {
+        const newText = createText('NEW!', {
+          fontFamily: 'BF', fontSize: 14, fontWeight: 'bold',
+          fill: 0xff3333, stroke: { color: 0x000000, width: 3 },
+        });
+        newText.position.set(130, 30);
+        panel.addChild(newText);
+      }
 
-      this.buttonStart.sprite.on('click', () => this.startGame())
+      if (this.medal) {
+        const medalText = createText(this.medal.label, {
+          fontFamily: 'BF', fontSize: 16, fontWeight: 'bold',
+          fill: this.medal.color, stroke: { color: 0x000000, width: 3 },
+        });
+        medalText.position.set(0, 56);
+        panel.addChild(medalText);
+      }
 
-      this.app.game.ticker.add(() => {
-        this.moveContainer()
-        this.moveGround()
+      this.app.stage.addChild(panel);
+
+      // Logo container
+      const container = markRaw(new PIXI.Container());
+      container.position.set(20, 130);
+      this.logoContainer.container = container;
+      this.app.stage.addChild(container);
+
+      const gameOver = createSprite(gameOverImg);
+      gameOver.sprite.position.set(0, 0);
+      container.addChild(gameOver.sprite);
+
+      const bird = createSprite(gshotBird);
+      bird.sprite.position.set(158, 5);
+      container.addChild(bird.sprite);
+
+      // Ground
+      const ground = createTilingSprite(groundURL, GROUND_WIDTH, GROUND_HEIGHT);
+      ground.sprite.position.set(0, GROUND_Y);
+      this.ground.sprite = ground.sprite;
+      this.app.stage.addChild(ground.sprite);
+
+      // Start button
+      const btn = createSprite(buttonStartURL);
+      btn.sprite.position.set(80, 280);
+      btn.sprite.eventMode = 'static';
+      btn.sprite.cursor = `url(${pointer}),auto`;
+      btn.sprite.on('click', () => this.startGame());
+      this.app.stage.addChild(btn.sprite);
+
+      this.app.ticker.add(() => {
+        this.moveContainer();
+        this.ground.sprite.tilePosition.x -= 1.1;
       });
     },
 
-    createdContainer() {
-      this.logoContainer.container = markRaw(new PIXI.Container())
-      this.app.game.stage.addChild(this.logoContainer.container)
-      this.logoContainer.container.position.set(this.logoContainer.x, this.logoContainer.y)
-    },
-    setPositionContainer() {
-      this.logoContainer.container.position.set(this.logoContainer.x, this.logoContainer.y)
-    },
     moveContainer() {
-      if (this.logoContainer.y >= 150) {
-        this.factor = -1
-      } else if (this.logoContainer.y <= 140) {
-        this.factor = 1
+      if (this.logoContainer.y >= 135) {
+        this.factor = -1;
+      } else if (this.logoContainer.y <= 125) {
+        this.factor = 1;
       }
-      this.logoContainer.y += 0.25 * this.factor
-      this.setPositionContainer()
+      this.logoContainer.y += 0.25 * this.factor;
+      this.logoContainer.container.position.y = this.logoContainer.y;
     },
-    stageAdd() {
-      this.app.game.stage.addChild(this.recordText.text) // add text
-    },
-    addText() {
-      this.recordText.text = markRaw(new PIXI.Text({
-        text: `record: ${this.isRecord}`,
-        style: new PIXI.TextStyle({
-          fontFamily: 'BF',
-          fontSize: 22,
-          fontWeight: 'bold',
-          fill: 0xffffff,
-          stroke: { color: 0x000000, width: 5 },
-        })
-      }));
-    },
-    moveGround() {
-      this.ground.tilingSpriteGround.tilePosition.x -= 1.1;
-    },
-    setPositionRecordText() {
-      this.recordText.text.position.set(this.recordText.x, this.recordText.y)
-    },
-    downloadTexture() {
-      this.gameOver.texture = markRaw(PIXI.Texture.from(gameOverImg))
-      this.bird.texture = markRaw(PIXI.Texture.from(gshotBird))
-      this.buttonStart.texture = markRaw(PIXI.Texture.from(buttonStartURL))
-      this.ground.groundTexture = markRaw(PIXI.Texture.from(groundURL));
-    },
-    createdSprites() {
-      this.gameOver.sprite = markRaw(new PIXI.Sprite(this.gameOver.texture))
-      this.bird.sprite = markRaw(new PIXI.Sprite(this.bird.texture))
-      this.buttonStart.sprite = markRaw(new PIXI.Sprite(this.buttonStart.texture))
-      this.ground.tilingSpriteGround = markRaw(new PIXI.TilingSprite({ texture: this.ground.groundTexture, width: 263, height: 86 }));
-    },
-    addSpriteInContainer() {
-      this.logoContainer.container.addChild(this.gameOver.sprite)
-      this.logoContainer.container.addChild(this.bird.sprite)
 
+    onKeydown(e) {
+      if (e.key === 'Enter') this.startGame();
     },
-    addSpriteInGame() {
-      this.app.game.stage.addChild(this.ground.tilingSpriteGround);
-      this.app.game.stage.addChild(this.buttonStart.sprite);
-    },
-    setPositionSpritesInContainer() {
-      this.gameOver.sprite.position.set(this.gameOver.x, this.gameOver.y)
-      this.bird.sprite.position.set(this.bird.x, this.bird.y)
 
+    onTouchend() {
+      this.startGame();
     },
-    setPositionSpritesInGame() {
-      this.ground.tilingSpriteGround.position.set(this.ground.x, this.ground.y);
-      this.buttonStart.sprite.position.set(this.buttonStart.x, this.buttonStart.y);
-      this.bird.sprite.position.set(this.bird.x, this.bird.y);
+
+    addListeners() {
+      window.addEventListener('keydown', this.onKeydown);
+      window.addEventListener('touchend', this.onTouchend);
     },
-    // listen for Enter key press
-    listener() {
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          this.startGame()
-        }
-      })
-      window.addEventListener('touchend', (e) => {
-        this.startGame()
-      })
+
+    removeListeners() {
+      window.removeEventListener('keydown', this.onKeydown);
+      window.removeEventListener('touchend', this.onTouchend);
     },
-  }
-}
+  },
+};
 </script>
 
 <style lang="scss" scoped>
+.gameover-screen {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .game-over {
   width: 225px;
   height: 400px;
-  flex-grow: 1;
-  background-image: url("./../assets/img/bg.png");
+  background-image: url('./../assets/img/bg.png');
   background-position: center center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -238,12 +201,48 @@ export default {
   justify-content: center;
 }
 
-.record {
-  text-transform: uppercase;
-  font-size: 20px;
-  font-weight: bold;
-  position: absolute;
-  top: 0;
-  left: 0;
+.history {
+  width: 225px;
+  padding: 8px 0 4px;
+
+  &__title {
+    font-family: 'BF', sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    color: #7a6249;
+    text-align: center;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: rgba(61, 43, 31, 0.6);
+    font-family: 'BF', sans-serif;
+    font-size: 11px;
+    color: #a09080;
+
+    &--current {
+      background: rgba(212, 160, 86, 0.3);
+      color: #f0c878;
+    }
+  }
+
+  &__score {
+    font-weight: bold;
+  }
+
+  &__date {
+    opacity: 0.7;
+  }
 }
 </style>
