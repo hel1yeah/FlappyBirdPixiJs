@@ -10,6 +10,8 @@ export const PIPE_GAP = 130;
 export const PIPE_MIN_Y = 220;
 export const PIPE_MAX_Y = 350;
 export const PIPE_SPACING = 160;
+export const PIPE_SPACING_VARIANCE = 30;
+export const COMBO_MARGIN = 8;
 export const PIPE_COUNT = 3;
 
 // Physics

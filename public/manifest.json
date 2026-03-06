@@ -1,0 +1,17 @@
+{
+  "name": "Flappy Bird",
+  "short_name": "Flappy",
+  "description": "Flappy Bird game built with PixiJS and Vue",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#87CEEB",
+  "theme_color": "#87CEEB",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

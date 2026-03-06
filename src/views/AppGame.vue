@@ -5,6 +5,8 @@
       <span :class="['key-badge', { active: pressedKey === 'arrowup' }]">↑</span>
       <span :class="['key-badge', 'key-badge--wide', { active: pressedKey === 'space' }]">SPACE</span>
       <span :class="['key-badge', { active: pressedKey === 'tap' }]">TAP</span>
+      <span :class="['key-badge', { active: paused }]">P</span>
+      <span class="key-badge key-badge--mute" @click="onMuteClick">{{ muted ? '🔇' : '🔊' }}</span>
     </div>
   </div>
 </template>
@@ -24,17 +26,26 @@ import charBirdImg3 from '@/assets/img/drags/fly-bird3.png';
 
 import { initPixiApp, createSprite, createTilingSprite, createText, createAnimatedSprite, destroyApp } from '@/utils/pixi';
 import { rectsOverlap, getBirdBounds } from '@/utils/collision';
+import { playFlap, playScore, playHit, playSwoosh, toggleMute, isMuted } from '@/utils/sound';
+import { getSelectedSkin } from '@/utils/skins';
 import {
   GAME_WIDTH, GAME_HEIGHT, GROUND_Y, GROUND_WIDTH, GROUND_HEIGHT,
-  PIPE_HEIGHT, PIPE_GAP, PIPE_MIN_Y, PIPE_MAX_Y, PIPE_SPACING, PIPE_COUNT,
+  PIPE_HEIGHT, PIPE_GAP, PIPE_MIN_Y, PIPE_MAX_Y, PIPE_SPACING, PIPE_SPACING_VARIANCE, PIPE_COUNT,
   GRAVITY, JUMP_FORCE, PIPE_SPEED, BG_SPEED, GROUND_SPEED,
   SPEED_INCREMENT, GAP_DECREMENT, MIN_PIPE_GAP, DIFFICULTY_INTERVAL,
-  DEATH_DURATION,
+  DEATH_DURATION, COMBO_MARGIN,
 } from '@/utils/constants';
 
 const BIRD_IMAGES = [charBirdImg1, charBirdImg2, charBirdImg3];
 const ALL_ASSETS = [bgUrl, bg2Url, groundURL, pipeBottomURL, pipeTopURL, clueTapURL, ...BIRD_IMAGES];
 const BG_CHANGE_INTERVAL = 10;
+const SHAKE_DURATION = 8;
+const SHAKE_INTENSITY = 4;
+const FEATHER_COUNT = 6;
+const FEATHER_COLORS = [0xffffff, 0xffe082, 0xffcc80, 0xff8a65];
+const CLOUD_COUNT = 3;
+const TRAIL_LENGTH = 5;
+const TRAIL_INTERVAL = 3;
 
 export default {
   name: 'AppGame',
@@ -43,6 +54,8 @@ export default {
       gameStart: false,
       gameFinish: false,
       dying: false,
+      paused: false,
+      muted: isMuted(),
       deathTimer: 0,
       app: null,
       bird: { animatedSpray: null, x: 30, y: 150 },
@@ -50,17 +63,27 @@ export default {
       idleTime: 0,
       idleBaseY: 150,
       pipes: [],
+      clouds: [],
       ground: { sprite: null, x: 0 },
       clue: { sprite: null, x: 82, y: 200 },
       keyHints: { container: null },
       scoreText: { text: null, score: 0, y: 30 },
+      bestScoreLine: null,
+      bestScoreLabel: null,
+      bestRecord: 0,
       scorePopScale: 1,
       bgSprite: null,
       bgTextures: { day: null, night: null },
       isNight: false,
-      lastBgSwitch: 0,
       flashOverlay: null,
       flashAlpha: 0,
+      pauseOverlay: null,
+      pauseText: null,
+      shakeTimer: 0,
+      feathers: [],
+      trail: [],
+      trailCounter: 0,
+      comboTexts: [],
       currentPipeSpeed: PIPE_SPEED,
       currentPipeGap: PIPE_GAP,
       pressedKey: null,
@@ -82,7 +105,7 @@ export default {
       this.app.stage.eventMode = 'static';
       this.app.stage.hitArea = this.app.screen;
       this.app.stage.on('click', () => {
-        if (!this.gameFinish) {
+        if (!this.gameFinish && !this.paused) {
           this.flashKey('tap');
           this.handleInput();
         }
@@ -97,11 +120,29 @@ export default {
       this.app.ticker.add((ticker) => {
         const dt = ticker.deltaTime;
 
-        // Flash overlay fade
         if (this.flashAlpha > 0) {
           this.flashAlpha = Math.max(0, this.flashAlpha - 0.08 * dt);
           this.flashOverlay.alpha = this.flashAlpha;
         }
+
+        if (this.shakeTimer > 0) {
+          this.shakeTimer -= dt;
+          const intensity = SHAKE_INTENSITY * (this.shakeTimer / SHAKE_DURATION);
+          this.app.stage.position.set(
+            (Math.random() - 0.5) * intensity * 2,
+            (Math.random() - 0.5) * intensity * 2,
+          );
+          if (this.shakeTimer <= 0) {
+            this.app.stage.position.set(0, 0);
+          }
+        }
+
+        this.updateFeathers(dt);
+        this.updateClouds(dt);
+        this.updateComboTexts(dt);
+        this.updateTrail(dt);
+
+        if (this.paused) return;
 
         if (this.dying) {
           this.updateDeathAnimation(dt);
@@ -123,12 +164,29 @@ export default {
     },
 
     createResources() {
-      // Background textures
+      this.bestRecord = parseInt(localStorage.getItem('record') || '0', 10);
+
+      // Background
       this.bgTextures.day = markRaw(PIXI.Texture.from(bgUrl));
       this.bgTextures.night = markRaw(PIXI.Texture.from(bg2Url));
-
       const bg = createTilingSprite(bgUrl, GAME_WIDTH, GAME_HEIGHT);
       this.bgSprite = bg.sprite;
+
+      // Clouds
+      for (let i = 0; i < CLOUD_COUNT; i++) {
+        const cloud = markRaw(new PIXI.Graphics());
+        const w = 30 + Math.random() * 25;
+        const h = 10 + Math.random() * 8;
+        cloud.ellipse(0, 0, w / 2, h / 2);
+        cloud.fill({ color: 0xffffff, alpha: 0.35 + Math.random() * 0.2 });
+        const x = Math.random() * GAME_WIDTH;
+        const y = 20 + Math.random() * 100;
+        cloud.position.set(x, y);
+        this.clouds.push({
+          graphic: cloud,
+          speed: 0.15 + Math.random() * 0.25,
+        });
+      }
 
       // Pipes pool
       for (let i = 0; i < PIPE_COUNT; i++) {
@@ -144,6 +202,22 @@ export default {
         };
         this.updatePipePositions(pipe);
         this.pipes.push(pipe);
+      }
+
+      // Best score line
+      if (this.bestRecord > 0) {
+        this.bestScoreLine = markRaw(new PIXI.Graphics());
+        this.bestScoreLine.alpha = 0;
+
+        this.bestScoreLabel = createText(`best: ${this.bestRecord}`, {
+          fontFamily: 'BF',
+          fontSize: 9,
+          fill: 0xffd700,
+          stroke: { color: 0x000000, width: 2 },
+        });
+        this.bestScoreLabel.anchor.set(1, 1);
+        this.bestScoreLabel.position.set(GAME_WIDTH - 4, -2);
+        this.bestScoreLabel.alpha = 0;
       }
 
       // Ground
@@ -175,18 +249,46 @@ export default {
       this.bird.animatedSpray.width = 27;
       this.bird.animatedSpray.height = 19;
       this.bird.animatedSpray.scale.set(1, 1);
+      this.bird.animatedSpray.tint = getSelectedSkin().tint;
       this.bird.animatedSpray.play();
 
-      // Flash overlay (white rect, on top of everything)
+      // Flash overlay
       this.flashOverlay = markRaw(new PIXI.Graphics());
       this.flashOverlay.rect(0, 0, GAME_WIDTH, GAME_HEIGHT);
       this.flashOverlay.fill({ color: 0xffffff });
       this.flashOverlay.alpha = 0;
+
+      // Pause overlay
+      this.pauseOverlay = markRaw(new PIXI.Graphics());
+      this.pauseOverlay.rect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+      this.pauseOverlay.fill({ color: 0x000000, alpha: 0.5 });
+      this.pauseOverlay.visible = false;
+
+      this.pauseText = createText('PAUSED', {
+        fontFamily: 'BF',
+        fontSize: 28,
+        fontWeight: 'bold',
+        fill: 0xffffff,
+        stroke: { color: 0x000000, width: 5 },
+      });
+      this.pauseText.anchor.set(0.5);
+      this.pauseText.position.set(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+      this.pauseText.visible = false;
     },
 
     addToStage() {
       const stage = this.app.stage;
       stage.addChild(this.bgSprite);
+
+      // Clouds behind pipes
+      this.clouds.forEach(c => stage.addChild(c.graphic));
+
+      // Best score line (behind pipes, above clouds)
+      if (this.bestScoreLine) {
+        stage.addChild(this.bestScoreLine);
+        stage.addChild(this.bestScoreLabel);
+      }
+
       this.pipes.forEach((pipe) => {
         stage.addChild(pipe.spriteBottom);
         stage.addChild(pipe.spriteTop);
@@ -196,6 +298,39 @@ export default {
       stage.addChild(this.scoreText.text);
       stage.addChild(this.bird.animatedSpray);
       stage.addChild(this.flashOverlay);
+      stage.addChild(this.pauseOverlay);
+      stage.addChild(this.pauseText);
+    },
+
+    updateClouds(dt) {
+      this.clouds.forEach(c => {
+        c.graphic.position.x -= c.speed * dt;
+        if (c.graphic.position.x < -40) {
+          c.graphic.position.x = GAME_WIDTH + 40;
+          c.graphic.position.y = 20 + Math.random() * 100;
+        }
+      });
+    },
+
+    updateBestScoreLine() {
+      if (!this.bestScoreLine || this.bestRecord <= 0) return;
+      // Show line only when approaching the record
+      const diff = this.bestRecord - this.scoreText.score;
+      if (diff <= 3 && diff >= -1) {
+        this.bestScoreLine.clear();
+        const y = this.bird.y;
+        for (let x = 0; x < GAME_WIDTH; x += 8) {
+          this.bestScoreLine.rect(x, y, 4, 1);
+        }
+        this.bestScoreLine.fill({ color: 0xffd700, alpha: 0.6 });
+        this.bestScoreLine.alpha = 1;
+        this.bestScoreLabel.alpha = 1;
+        this.bestScoreLabel.position.y = y - 2;
+      }
+      if (this.scoreText.score > this.bestRecord) {
+        this.bestScoreLine.alpha = 0;
+        this.bestScoreLabel.alpha = 0;
+      }
     },
 
     updatePipePositions(pipe) {
@@ -203,7 +338,6 @@ export default {
       pipe.spriteTop.position.set(pipe.x, pipe.By - PIPE_HEIGHT - this.currentPipeGap);
     },
 
-    // Idle: bird bobs up and down before game starts
     updateIdleAnimation(dt) {
       this.idleTime += dt * 0.05;
       this.bird.y = this.idleBaseY + Math.sin(this.idleTime) * 8;
@@ -222,6 +356,7 @@ export default {
 
     jump() {
       this.velocity = -JUMP_FORCE;
+      playFlap();
     },
 
     updatePipes(dt) {
@@ -232,12 +367,13 @@ export default {
 
         if (!pipe.scored && pipe.x + 21 < this.bird.x) {
           pipe.scored = true;
-          this.addScore();
+          this.addScore(pipe);
         }
 
         if (pipe.x <= -50) {
           const rightmostX = Math.max(...this.pipes.map(p => p.x));
-          pipe.x = rightmostX + PIPE_SPACING;
+          const variance = (Math.random() - 0.5) * 2 * PIPE_SPACING_VARIANCE;
+          pipe.x = rightmostX + PIPE_SPACING + variance;
           pipe.By = this.randomHeight();
           pipe.scored = false;
         }
@@ -246,20 +382,32 @@ export default {
       });
     },
 
-    addScore() {
-      this.scoreText.score++;
+    addScore(pipe) {
+      // Check combo — bird is close to pipe edges
+      const birdCenter = this.bird.y + 9.5;
+      const gapTop = pipe.By - this.currentPipeGap;
+      const gapBottom = pipe.By;
+      const topDist = birdCenter - gapTop;
+      const bottomDist = gapBottom - birdCenter;
+      const isCombo = topDist < COMBO_MARGIN || bottomDist < COMBO_MARGIN;
+
+      const points = isCombo ? 2 : 1;
+      this.scoreText.score += points;
       this.scoreText.text.text = `${this.scoreText.score}`;
+      this.scorePopScale = isCombo ? 1.7 : 1.4;
+      playScore();
 
-      // Score pop effect
-      this.scorePopScale = 1.4;
+      if (isCombo) {
+        this.spawnComboText();
+      }
 
-      // Switch background every N points
+      this.updateBestScoreLine();
+
       if (this.scoreText.score % BG_CHANGE_INTERVAL === 0) {
         this.isNight = !this.isNight;
         this.bgSprite.texture = this.isNight ? this.bgTextures.night : this.bgTextures.day;
       }
 
-      // Increase difficulty
       if (this.scoreText.score % DIFFICULTY_INTERVAL === 0) {
         this.currentPipeSpeed += SPEED_INCREMENT;
         if (this.currentPipeGap > MIN_PIPE_GAP) {
@@ -308,21 +456,122 @@ export default {
       }
     },
 
+    spawnFeathers() {
+      for (let i = 0; i < FEATHER_COUNT; i++) {
+        const g = markRaw(new PIXI.Graphics());
+        const color = FEATHER_COLORS[Math.floor(Math.random() * FEATHER_COLORS.length)];
+        g.circle(0, 0, 2 + Math.random() * 2);
+        g.fill({ color });
+        g.position.set(this.bird.x + 13, this.bird.y + 10);
+        this.app.stage.addChild(g);
+        this.feathers.push({
+          graphic: g,
+          vx: (Math.random() - 0.5) * 4,
+          vy: -2 - Math.random() * 3,
+          life: 30 + Math.random() * 20,
+        });
+      }
+    },
+
+    updateFeathers(dt) {
+      for (let i = this.feathers.length - 1; i >= 0; i--) {
+        const f = this.feathers[i];
+        f.vx *= 0.98;
+        f.vy += 0.15 * dt;
+        f.graphic.position.x += f.vx * dt;
+        f.graphic.position.y += f.vy * dt;
+        f.life -= dt;
+        f.graphic.alpha = Math.max(0, f.life / 30);
+        if (f.life <= 0) {
+          this.app.stage.removeChild(f.graphic);
+          f.graphic.destroy();
+          this.feathers.splice(i, 1);
+        }
+      }
+    },
+
+    // Combo floating text
+    spawnComboText() {
+      const text = createText('NICE! +2', {
+        fontFamily: 'BF',
+        fontSize: 14,
+        fontWeight: 'bold',
+        fill: 0xffd700,
+        stroke: { color: 0x000000, width: 3 },
+      });
+      text.anchor.set(0.5);
+      text.position.set(this.bird.x + 14, this.bird.y - 10);
+      this.app.stage.addChild(text);
+      this.comboTexts.push({ text, life: 40, vy: -1 });
+    },
+
+    updateComboTexts(dt) {
+      for (let i = this.comboTexts.length - 1; i >= 0; i--) {
+        const c = this.comboTexts[i];
+        c.life -= dt;
+        c.text.position.y += c.vy * dt;
+        c.text.alpha = Math.max(0, c.life / 25);
+        if (c.life <= 0) {
+          this.app.stage.removeChild(c.text);
+          c.text.destroy();
+          this.comboTexts.splice(i, 1);
+        }
+      }
+    },
+
+    // Bird trail
+    updateTrail(dt) {
+      this.trailCounter += dt;
+      if (this.trailCounter >= TRAIL_INTERVAL && this.gameStart && !this.dying) {
+        this.trailCounter = 0;
+        const dot = markRaw(new PIXI.Graphics());
+        dot.circle(0, 0, 2);
+        dot.fill({ color: 0xffffff, alpha: 0.4 });
+        dot.position.set(this.bird.x, this.bird.y + 9.5);
+        // Insert behind bird
+        const birdIndex = this.app.stage.getChildIndex(this.bird.animatedSpray);
+        this.app.stage.addChildAt(dot, birdIndex);
+        this.trail.push({ graphic: dot, life: 15 });
+      }
+      // Fade existing
+      for (let i = this.trail.length - 1; i >= 0; i--) {
+        const t = this.trail[i];
+        t.life -= dt;
+        t.graphic.alpha = Math.max(0, (t.life / 15) * 0.4);
+        if (t.life <= 0) {
+          this.app.stage.removeChild(t.graphic);
+          t.graphic.destroy();
+          this.trail.splice(i, 1);
+        }
+      }
+      // Limit trail length
+      while (this.trail.length > TRAIL_LENGTH) {
+        const old = this.trail.shift();
+        this.app.stage.removeChild(old.graphic);
+        old.graphic.destroy();
+      }
+    },
+
+    vibrate(ms) {
+      if (navigator.vibrate) navigator.vibrate(ms);
+    },
+
     startDeath() {
       this.dying = true;
       this.gameStart = false;
       this.velocity = -5;
       this.bird.animatedSpray.stop();
       this.deathTimer = 0;
-
-      // White flash
       this.flashAlpha = 1;
       this.flashOverlay.alpha = 1;
+      this.shakeTimer = SHAKE_DURATION;
+      this.spawnFeathers();
+      playHit();
+      this.vibrate(50);
     },
 
     updateDeathAnimation(dt) {
       this.deathTimer += dt;
-
       this.velocity += GRAVITY * 1.2 * dt;
       this.bird.y += this.velocity * dt;
       this.bird.animatedSpray.rotation += 0.15 * dt;
@@ -389,8 +638,24 @@ export default {
       this.app.stage.addChild(container);
     },
 
+    togglePause() {
+      if (!this.gameStart || this.dying || this.gameFinish) return;
+      this.paused = !this.paused;
+      this.pauseOverlay.visible = this.paused;
+      this.pauseText.visible = this.paused;
+      if (this.paused) {
+        this.bird.animatedSpray.stop();
+      } else {
+        this.bird.animatedSpray.play();
+      }
+    },
+
+    onMuteClick() {
+      this.muted = toggleMute();
+    },
+
     handleInput() {
-      if (this.dying) return;
+      if (this.dying || this.paused) return;
       if (!this.gameStart) {
         this.start();
       }
@@ -403,6 +668,7 @@ export default {
       if (this.keyHints.container) {
         this.app.stage.removeChild(this.keyHints.container);
       }
+      playSwoosh();
     },
 
     finish() {
@@ -419,6 +685,13 @@ export default {
 
     onKeydown(e) {
       if (e.repeat) return;
+      if (e.key === 'm' || e.key === 'M') {
+        return this.onMuteClick();
+      }
+      if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+        return this.togglePause();
+      }
+      if (this.paused) return;
       if (e.key === 'ArrowUp' || e.code === 'Space') {
         this.flashKey(e.code === 'Space' ? 'space' : 'arrowup');
         this.handleInput();
@@ -426,6 +699,7 @@ export default {
     },
 
     onTouchend() {
+      if (this.paused) return;
       this.flashKey('tap');
       this.handleInput();
     },
@@ -490,6 +764,14 @@ export default {
     color: #fff;
     box-shadow: 0 1px 0 #b08030;
     transform: translateY(2px);
+  }
+
+  &--mute {
+    cursor: pointer;
+    font-size: 14px;
+    &:hover {
+      border-color: #d4a056;
+    }
   }
 }
 .key-badge--wide {

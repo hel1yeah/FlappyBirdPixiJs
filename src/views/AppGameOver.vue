@@ -3,12 +3,13 @@
     <div class="game-over" ref="canvas"></div>
     <div v-if="scoreHistory.length" class="history">
       <div class="history__title">history</div>
-      <div class="history__list">
+      <div class="history__scroll">
         <div
           v-for="(entry, i) in scoreHistory"
           :key="i"
           :class="['history__row', { 'history__row--current': i === 0 && justFinished }]"
         >
+          <span class="history__index">#{{ i + 1 }}</span>
           <span class="history__score">{{ entry.score }}</span>
           <span class="history__date">{{ entry.date }}</span>
         </div>
@@ -143,9 +144,14 @@ export default {
       btn.sprite.on('click', () => this.startGame());
       this.app.stage.addChild(btn.sprite);
 
-      this.app.ticker.add(() => {
+      this.btnSprite = btn.sprite;
+      this.pulseTime = 0;
+      this.app.ticker.add((ticker) => {
         this.moveContainer();
         this.ground.sprite.tilePosition.x -= 1.1;
+        this.pulseTime += ticker.deltaTime * 0.04;
+        const s = 1 + Math.sin(this.pulseTime) * 0.05;
+        this.btnSprite.scale.set(s, s);
       });
     },
 
@@ -215,21 +221,40 @@ export default {
     text-transform: uppercase;
   }
 
-  &__list {
+  &__scroll {
+    max-height: 100px;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: #7a6249 transparent;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #7a6249;
+      border-radius: 2px;
+    }
   }
 
   &__row {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
     padding: 3px 10px;
     border-radius: 4px;
     background: rgba(61, 43, 31, 0.6);
     font-family: 'BF', sans-serif;
     font-size: 11px;
     color: #a09080;
+    flex-shrink: 0;
 
     &--current {
       background: rgba(212, 160, 86, 0.3);
@@ -237,8 +262,14 @@ export default {
     }
   }
 
+  &__index {
+    opacity: 0.5;
+    min-width: 20px;
+  }
+
   &__score {
     font-weight: bold;
+    flex: 1;
   }
 
   &__date {
