@@ -1,9 +1,10 @@
 <template>
-  <div class="game-over"></div>
+  <div class="game-over" ref="canvas"></div>
 </template>
 
 <script>
 
+import { markRaw } from 'vue';
 import * as PIXI from 'pixi.js';
 
 import groundURL from '@/assets/img/ground.png'
@@ -23,10 +24,10 @@ export default {
         game: null,
         width: 225,
         height: 400,
-      }, // приложение 
+      }, // application
       bird: {
-        texture: null, // текстуры картинок выше
-        sprite: null, // анимированная анимация из 4х текстур выше 
+        texture: null, // texture
+        sprite: null, // sprite
         x: 158,
         y: 5,
         width: 27,
@@ -46,7 +47,7 @@ export default {
         y: 150,
       },
       ground: {
-        groundTexture: null, // 
+        groundTexture: null, //
         tilingSpriteGround: null, //
         x: 0,
         y: 350
@@ -59,11 +60,6 @@ export default {
         texture: null,
         sprite: null,
       },
-      logoContainer: {
-        container: null,
-        x: 20,
-        y: 150,
-      },
       recordText: {
         style: null,
         text: '0',
@@ -71,11 +67,11 @@ export default {
         x: 5,
         y: 5,
       },
-      factor: 1, // множитель 
+      factor: 1, // multiplier
     }
   },
-  mounted() {
-    this.drawPixi();
+  async mounted() {
+    await this.drawPixi();
     this.listener();
 
   },
@@ -96,41 +92,44 @@ export default {
     startGame() {
       this.$router.push({ name: 'game' })
     },
-    drawPixi() {
+    async drawPixi() {
       let gameOverWrapper = document.querySelector('.game-over')
 
-      this.app.game = new PIXI.Application({
-        transparent: true,
+      this.app.game = markRaw(new PIXI.Application());
+      await this.app.game.init({
+        backgroundAlpha: 0,
         width: this.app.width,
         height: this.app.height,
       })
-      gameOverWrapper.appendChild(this.app.game.view);
-      //добавление на сцену текста 
+      gameOverWrapper.appendChild(this.app.game.canvas);
+
+      // load textures
+      await PIXI.Assets.load([groundURL, buttonStartURL, gameOverImg, gshotBird]);
+
+      // add text to the stage
       this.addText()
 
       this.setPositionRecordText()
-      // добавление на сцену 
+      // add to the stage
       this.stageAdd()
-      //  указываю на что изменять курсор если наведено на кнопку 
-      this.setCursorPointer()
-      // создаю контейнер для двух лого 
+      // create container for logos
       this.createdContainer()
-      // задаю позицию для контейнера 
+      // set container position
       this.setPositionContainer()
-      // загрyжаю текстуры 
+      // load textures
       this.downloadTexture()
-      // создаю спрайты с текстур
+      // create sprites from textures
       this.createdSprites()
-      // добавляю спрайты в контейнер
+      // add sprites to container
       this.addSpriteInContainer()
-      // добавляю спрайты в game
+      // add sprites to game
       this.addSpriteInGame()
-      // задаю позицию  gameOver  Bird внутри контейнера 
+      // set gameOver and Bird positions inside container
       this.setPositionSpritesInContainer()
-      // задаю позицию  ground внутри game 
+      // set ground position inside game
       this.setPositionSpritesInGame()
-      this.buttonStart.sprite.interactive = true
-      this.buttonStart.sprite.buttonMode = true
+      this.buttonStart.sprite.eventMode = 'static'
+      this.buttonStart.sprite.cursor = `url(${pointer}),auto`
 
 
       this.buttonStart.sprite.on('click', () => this.startGame())
@@ -142,7 +141,7 @@ export default {
     },
 
     createdContainer() {
-      this.logoContainer.container = new PIXI.Container()
+      this.logoContainer.container = markRaw(new PIXI.Container())
       this.app.game.stage.addChild(this.logoContainer.container)
       this.logoContainer.container.position.set(this.logoContainer.x, this.logoContainer.y)
     },
@@ -159,19 +158,19 @@ export default {
       this.setPositionContainer()
     },
     stageAdd() {
-      this.app.game.stage.addChild(this.recordText.text) // добавление текста 
+      this.app.game.stage.addChild(this.recordText.text) // add text
     },
     addText() {
-      this.recordText.text = new PIXI.Text(`record: ${this.isRecord}`,
-        {
+      this.recordText.text = markRaw(new PIXI.Text({
+        text: `record: ${this.isRecord}`,
+        style: new PIXI.TextStyle({
           fontFamily: 'BF',
           fontSize: 22,
           fontWeight: 'bold',
-          fill: ['#ffffff'],
-          stroke: '#000',
-          strokeThickness: 5,
-        }
-      );
+          fill: 0xffffff,
+          stroke: { color: 0x000000, width: 5 },
+        })
+      }));
     },
     moveGround() {
       this.ground.tilingSpriteGround.tilePosition.x -= 1.1;
@@ -180,16 +179,16 @@ export default {
       this.recordText.text.position.set(this.recordText.x, this.recordText.y)
     },
     downloadTexture() {
-      this.gameOver.texture = PIXI.Texture.from(gameOverImg)
-      this.bird.texture = PIXI.Texture.from(gshotBird)
-      this.buttonStart.texture = PIXI.Texture.from(buttonStartURL)
-      this.ground.groundTexture = PIXI.Texture.from(groundURL);
+      this.gameOver.texture = markRaw(PIXI.Texture.from(gameOverImg))
+      this.bird.texture = markRaw(PIXI.Texture.from(gshotBird))
+      this.buttonStart.texture = markRaw(PIXI.Texture.from(buttonStartURL))
+      this.ground.groundTexture = markRaw(PIXI.Texture.from(groundURL));
     },
     createdSprites() {
-      this.gameOver.sprite = PIXI.Sprite.from(this.gameOver.texture)
-      this.bird.sprite = PIXI.Sprite.from(this.bird.texture)
-      this.buttonStart.sprite = PIXI.Sprite.from(this.buttonStart.texture)
-      this.ground.tilingSpriteGround = new PIXI.TilingSprite(this.ground.groundTexture, 263, 86);
+      this.gameOver.sprite = markRaw(new PIXI.Sprite(this.gameOver.texture))
+      this.bird.sprite = markRaw(new PIXI.Sprite(this.bird.texture))
+      this.buttonStart.sprite = markRaw(new PIXI.Sprite(this.buttonStart.texture))
+      this.ground.tilingSpriteGround = markRaw(new PIXI.TilingSprite({ texture: this.ground.groundTexture, width: 263, height: 86 }));
     },
     addSpriteInContainer() {
       this.logoContainer.container.addChild(this.gameOver.sprite)
@@ -210,11 +209,7 @@ export default {
       this.buttonStart.sprite.position.set(this.buttonStart.x, this.buttonStart.y);
       this.bird.sprite.position.set(this.bird.x, this.bird.y);
     },
-    setCursorPointer() {
-      const pointerIcon = `url(${pointer}),auto`
-      this.app.game.renderer.plugins.interaction.cursorStyles.pointer = pointerIcon;
-    },
-    // слушаем нажатия enter
+    // listen for Enter key press
     listener() {
       window.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {

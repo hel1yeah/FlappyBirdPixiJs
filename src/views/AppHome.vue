@@ -4,6 +4,7 @@
 
 <script>
 
+import { markRaw } from 'vue';
 import * as PIXI from 'pixi.js';
 import bgUrl from '@/assets/img/bg.png';
 import groundURL from '@/assets/img/ground.png'
@@ -26,11 +27,11 @@ export default {
         game: null,
         width: 225,
         height: 400,
-      }, // приложение 
+      }, // application
       bird: {
-        alienImages: [charBirdImg1, charBirdImg2, charBirdImg3], // масив ссылок на картинки
-        textureArray: [], // текстуры картинок выше
-        animatedSpray: null, // анимированная анимация из 4х текстур выше 
+        alienImages: [charBirdImg1, charBirdImg2, charBirdImg3], // array of image URLs
+        textureArray: [], // textures from images above
+        animatedSpray: null, // animated sprite from textures above
         x: 158,
         y: 0,
         width: 27,
@@ -58,7 +59,7 @@ export default {
         y: 150,
       },
       ground: {
-        groundTexture: null, // 
+        groundTexture: null, //
         tilingSpriteGround: null, //
         x: 0,
         y: 350
@@ -71,16 +72,11 @@ export default {
         texture: null,
         sprite: null,
       },
-      logoContainer: {
-        container: null,
-        x: 20,
-        y: 150,
-      },
-      factor: 1, // множитель 
+      factor: 1, // multiplier
     }
   },
-  mounted() {
-    this.drawPixi();
+  async mounted() {
+    await this.drawPixi();
     this.listener()
 
   },
@@ -88,47 +84,48 @@ export default {
     startGame() {
       this.$router.push({ name: 'game' })
     },
-    drawPixi() {
+    async drawPixi() {
       let homeWrapper = document.querySelector('.home')
 
-      this.app.game = new PIXI.Application({
-        transparent: true,
+      this.app.game = markRaw(new PIXI.Application());
+      await this.app.game.init({
+        backgroundAlpha: 0,
         width: this.app.width,
         height: this.app.height,
-
       })
 
-      homeWrapper.appendChild(this.app.game.view);
+      homeWrapper.appendChild(this.app.game.canvas);
+
+      // load textures
+      await PIXI.Assets.load([bgUrl, groundURL, buttonStartURL, flappyLogo, birdLogo, charBirdImg1, charBirdImg2, charBirdImg3]);
 
       for (let i = 0; i < this.bird.alienImages.length; i++) {
-        let texture = PIXI.Texture.from(this.bird.alienImages[i]);
+        let texture = markRaw(PIXI.Texture.from(this.bird.alienImages[i]));
         this.bird.textureArray.push(texture);
       }
-      this.bird.animatedSpray = new PIXI.AnimatedSprite(this.bird.textureArray);
+      this.bird.animatedSpray = markRaw(new PIXI.AnimatedSprite(this.bird.textureArray));
       this.app.game.stage.addChild(this.bird.animatedSpray)
 
       this.bird.animatedSpray.animationSpeed = 0.05;
       this.bird.animatedSpray.play();
-      //  указываю на что изменять курсор если наведено на кнопку 
-      this.setCursorPointer()
-      // создаю контейнер для двух лого 
+      // create container for two logos
       this.createdContainer()
-      // задаю позицию для контейнера 
+      // set container position
       this.setPositionContainer()
-      // загрyжаю текстуры 
+      // load textures
       this.downloadTexture()
-      // создаю спрайты с текстур
+      // create sprites from textures
       this.createdSprites()
-      // добавляю спрайты в контейнер
+      // add sprites to container
       this.addSpriteInContainer()
-      // добавляю спрайты в game
+      // add sprites to game
       this.addSpriteInGame()
-      // задаю позицию  logoFlappy logoBird Bird внутри контейнера 
+      // set logoFlappy, logoBird, Bird positions inside container
       this.setPositionSpritesInContainer()
-      // задаю позицию  ground внутри game 
+      // set ground position inside game
       this.setPositionSpritesInGame()
-      this.buttonStart.sprite.interactive = true
-      this.buttonStart.sprite.buttonMode = true
+      this.buttonStart.sprite.eventMode = 'static'
+      this.buttonStart.sprite.cursor = `url(${pointer}),auto`
 
 
       this.buttonStart.sprite.on('click', () => this.startGame())
@@ -140,7 +137,7 @@ export default {
     },
 
     createdContainer() {
-      this.logoContainer.container = new PIXI.Container()
+      this.logoContainer.container = markRaw(new PIXI.Container())
       this.app.game.stage.addChild(this.logoContainer.container)
       this.logoContainer.container.position.set(this.logoContainer.x, this.logoContainer.y)
     },
@@ -160,16 +157,16 @@ export default {
       this.ground.tilingSpriteGround.tilePosition.x -= 1.1;
     },
     downloadTexture() {
-      this.logoFlappy.texture = PIXI.Texture.from(flappyLogo)
-      this.logoBird.texture = PIXI.Texture.from(birdLogo)
-      this.buttonStart.texture = PIXI.Texture.from(buttonStartURL)
-      this.ground.groundTexture = PIXI.Texture.from(groundURL);
+      this.logoFlappy.texture = markRaw(PIXI.Texture.from(flappyLogo))
+      this.logoBird.texture = markRaw(PIXI.Texture.from(birdLogo))
+      this.buttonStart.texture = markRaw(PIXI.Texture.from(buttonStartURL))
+      this.ground.groundTexture = markRaw(PIXI.Texture.from(groundURL));
     },
     createdSprites() {
-      this.logoFlappy.sprite = PIXI.Sprite.from(this.logoFlappy.texture)
-      this.logoBird.sprite = PIXI.Sprite.from(this.logoBird.texture)
-      this.buttonStart.sprite = PIXI.Sprite.from(this.buttonStart.texture)
-      this.ground.tilingSpriteGround = new PIXI.TilingSprite(this.ground.groundTexture, 263, 86);
+      this.logoFlappy.sprite = markRaw(new PIXI.Sprite(this.logoFlappy.texture))
+      this.logoBird.sprite = markRaw(new PIXI.Sprite(this.logoBird.texture))
+      this.buttonStart.sprite = markRaw(new PIXI.Sprite(this.buttonStart.texture))
+      this.ground.tilingSpriteGround = markRaw(new PIXI.TilingSprite({ texture: this.ground.groundTexture, width: 263, height: 86 }));
     },
     addSpriteInContainer() {
       this.logoContainer.container.addChild(this.logoFlappy.sprite)
@@ -189,11 +186,7 @@ export default {
       this.ground.tilingSpriteGround.position.set(this.ground.x, this.ground.y);
       this.buttonStart.sprite.position.set(this.buttonStart.x, this.buttonStart.y);
     },
-    setCursorPointer(){
-        const pointerIcon = `url(${pointer}),auto`
-        this.app.game.renderer.plugins.interaction.cursorStyles.pointer = pointerIcon;
-    },
-    // слушаем нажатия enter
+    // listen for Enter key press
     listener() {
       window.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {

@@ -41,8 +41,8 @@ export default {};
   display: table;
   margin: 20px auto;
   -moz-user-select: none; /* Mozilla Firefox */
-  -ms-user-select: none; /* Internet Explorer (не поддерживается) */
-  -o-user-select: none; /* Opera Presto (не поддерживается) */
+  -ms-user-select: none; /* Internet Explorer (not supported) */
+  -o-user-select: none; /* Opera Presto (not supported) */
   -webkit-user-select: none; /* Google Chrome, Opera Next, Safari */
 }
 </style>
